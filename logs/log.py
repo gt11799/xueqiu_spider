@@ -8,7 +8,6 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 
 fh = logging.FileHandler('logs/.spider.log')
 fh.setFormatter(formatter)
-fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setFormatter(formatter)
 ch.setLevel(logging.INFO)
