@@ -6,10 +6,11 @@ from spiders.html_parser import get_people, get_people_id
 
 def crawl():
     spider = Spider()
-    # spider.login()
+    spider.login()
     # spider.get_people()
-    spider.get_people_detail('5977514373')
-    print spider.get_followers('5977514373')
+    # spider.get_people_detail('5977514373')
+    # print spider.get_followers('5977514373')
+    print spider.chat(2862718994, '你好')
 
 
 def parse():
@@ -21,4 +22,4 @@ def parse():
 
 if __name__ == '__main__':
     crawl()
-    parse()
+    # parse()
