@@ -10,13 +10,13 @@ def get_people(content):
     soup = BeautifulSoup(content)
     content = soup.find_all('div', 'box_topInfluence')
     content = content[0]
-    print content.prettify()
     tags = content.find_all('a')
     result = []
     for tag in tags:
         name, href = tag.get('title'), tag.get('href')
         if name and href:
-            result.append((tag['title'], tag['href']))
+            href = href.replace('/', '', 1)
+            result.append((tag['href'], tag['title']))
         else:
             print tag
     return result
@@ -29,3 +29,9 @@ def get_people_id(content):
     uids = re.findall('var\suid\s=\s(\d+)?', content)
     if len(uids) > 0:
         return uids[0]
+
+
+def get_uid_from_url(url):
+    result = re.findall('/(\d+)', url)
+    if len(result) > 0:
+        return int(result[0])

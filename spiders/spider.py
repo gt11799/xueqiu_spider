@@ -8,6 +8,7 @@ from urlparse import urljoin
 
 from config import *
 from spiders.common import *
+from spiders.html_parser import *
 from logs.log import logger
 
 
@@ -34,15 +35,15 @@ class Spider(object):
         data = {
             'areacode': 86,
             'remember_me': 'on',
-            'telephone': USER_NAME,
+            'username': USER_NAME,
             'password': self.get_hash(PASSWORD),
         }
         response = self.session.post(url, headers=BASE_HEADER, data=data)
         logger.debug(response.content)
-        if True or self.check_login():
+
+        if self.check_login():
             logger.info('登录成功')
-            data = response.json()
-            self.uid = data['uid']
+            self.get_people_id('8276760920')
             self.save_cookies()
             return
         raise ValueError('登录失败')
@@ -57,38 +58,61 @@ class Spider(object):
             }
             pickle.dump(data, f)
 
+    @classmethod
+    def clear_cookies(cls):
+        with open('spiders/.session', 'wb') as f:
+            pickle.dump({}, f)
+
     def load_cookies(self):
         with open('spiders/.session') as f:
-            data = pickle.load(f)
+            try:
+                data = pickle.load(f)
+            except EOFError:
+                return {}
             self.user_name = data['user_name']
             if self.user_name != USER_NAME:
                 logger.warning("账户变更，重新登录")
+                self.uid = None
                 return {}
             self.uid = data['uid']
             cookies = data['cookies']
             return cookies
 
-    def check_login(self):
-        cookies = self.load_cookies()
-        response = self.session.get(BASE_URL, headers=BASE_HEADER,
-                                    cookies=cookies, allow_redirects=False)
+    def check_login(self, load_cookie=True):
+        if load_cookie:
+            cookies = self.load_cookies()
+            response = self.session.get(BASE_URL, headers=BASE_HEADER,
+                                        cookies=cookies, allow_redirects=False)
+        else:
+            response = self.session.get(BASE_URL, headers=BASE_HEADER,
+                                        allow_redirects=False)
         if response.status_code == 302:
-            return True
+            if self.uid is not None:
+                return True
+            location = response.headers['Location']
+            uid = get_uid_from_url(location)
+            if uid:
+                self.uid = uid
+                return True
+            else:
+                logger.error(u"从跳转链接解析uid出错了")
         return False
 
     def get_people(self):
         url = urljoin(BASE_URL, PEOPLE_URL)
         respond = self.session.get(url, headers=BASE_HEADER)
-        with open('hh.html', 'w') as f:
-            f.write(respond.content)
-        logger.info('抓取')
+        result = get_people(respond.content)
+        logger.info('抓取了%s个大V' % len(result))
+        return result
 
-    def get_people_detail(self, path):
+    def get_people_id(self, path):
         url = urljoin(BASE_URL, path)
         respond = self.session.get(url, headers=BASE_HEADER)
-        with open('hhas.html', 'w') as f:
-            f.write(respond.content)
-        logger.info('抓取')
+        if respond.status_code == 200:
+            uid = get_people_id(respond.content)
+            return uid
+        else:
+            logger.error(u'抓取’%s‘用户的id失败' % path)
 
     def get_followers(self, uid):
         size = 100
@@ -126,7 +150,6 @@ class Spider(object):
             'limit': 30,
             '_': int(time.time() * 1000)
         }
-
         cookies = self.load_cookies()
         respond = self.session.get(url, headers=CHAT_HEADER, params=params, cookies=cookies)
         if respond.status_code == 200:
@@ -144,7 +167,7 @@ class Spider(object):
         if not sequenceId:
             return False
         data = {
-            'plain': 'hello',
+            'plain': CHAT_MESSAGE,
             'to_group': False,
             'toId': uid,
             'sequenceId': sequenceId + 1
@@ -153,11 +176,8 @@ class Spider(object):
         cookies = self.load_cookies()
         respond = self.session.post(CHAT_URL, headers=CHAT_HEADER, cookies=cookies,
                                     params=params, data=json.dumps(data))
-        print respond.status_code
-        print respond.request.headers
-        print respond.request.url
-        print respond.json()
         if respond.status_code == 200:
-            logger.info(respond.json())
             return True
+        logger.debug(respond.status_code)
+        logger.debug(respond.content)
         return False
