@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import sys
 import time
 
@@ -67,10 +68,17 @@ def remove_chat_history():
 
 def remove_login():
     Spider.clear_cookies()
+    logger.info('登出完毕')
 
 
 def remove_all_people():
     People.remove_all()
+    logger.info('粉丝删除完毕')
+
+
+def clear_log():
+    os.remove('logs/.spider.log')
+    logger.info('日志清除完毕')
 
 
 def main(func):
@@ -80,10 +88,11 @@ def main(func):
         'remove_chat_history': remove_chat_history,
         'remove_login': remove_login,
         'remove_all_people': remove_all_people,
+        'clear_log': clear_log,
     }
     keys = funcs.keys()
     if func not in keys:
-        raise ValueError("参数必须是这三种: %s" % ', '.join(keys))
+        raise ValueError("参数必须是一下几种: %s" % ', '.join(keys))
     funcs[func]()
 
 
