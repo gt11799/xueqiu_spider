@@ -18,8 +18,9 @@ def get_people(content):
             href = href.replace('/', '', 1)
             result.append((tag['href'], tag['title']))
         else:
+            print u'解析%s失败' % tag
             print tag
-    return result
+    return list(set(result))
 
 
 def get_people_id(content):

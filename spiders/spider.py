@@ -24,6 +24,14 @@ class Spider(object):
         m.update(string)
         return m.hexdigest()
 
+    def _request(self, url, params={}):
+        # 应该使用统一的request函数去请求，此处待重构
+        try:
+            response = self.session.get(url, headers=FOLLOWER_HEADER, params=params, timeout=10)
+            return response
+        except requests.ConnectionError, requests.ConnectTimeout:
+            logger.error('%s请求超时')
+
     def visit_index(self):
         self.session.get(BASE_URL, headers=BASE_HEADER)
 
@@ -115,7 +123,7 @@ class Spider(object):
             logger.error(u'抓取’%s‘用户的id失败' % path)
 
     def get_followers(self, uid):
-        size = 100
+        size = 1000
         url = urljoin(BASE_URL, FOLLOWERS_URL)
         params = {
             'size': size,
@@ -123,7 +131,9 @@ class Spider(object):
             'uid': uid,
             '_': int(time.time() * 1000)
         }
-        respond = self.session.get(url, headers=FOLLOWER_HEADER, params=params)
+        respond = self._request(url, params=params)
+        if not respond:
+            return []
         data = respond.json()
         max_page = data.get('maxPage')
         if not max_page:
@@ -133,9 +143,12 @@ class Spider(object):
         result = data['followers']
         for page in range(1, max_page):
             time.sleep(FOLLOWER_PAGE_INTEVAL)
+            logger.info('开始抓取第%s页的粉丝' % page)
             params['pageNo'] = page
             params['_'] = int(time.time() * 1000)
-            respond = self.session.get(url, headers=BASE_HEADER, params=params)
+            respond = self._request(url, params=params)
+            if not respond:
+                continue
             data = respond.json()
             result += data['followers']
         return self.handle_followers(result)
