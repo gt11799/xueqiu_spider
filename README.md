@@ -20,6 +20,12 @@
 config需要配置用户名，密码和要发送的消息
 
 
+### 启动运行环境
+
+进入工作目录，然后执行(通常来说，env放在了跟工作目录平级，这里命名成了spider-env)
+
+        source ../spider-env/bin/activate
+
 ### 执行：
 
         python main.py [to_do]
