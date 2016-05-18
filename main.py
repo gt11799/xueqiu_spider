@@ -5,17 +5,9 @@ import time
 
 from logs.log import logger
 from config import *
-from spiders.spider import Spider
+from spiders.spider import Spider, if_int
 from spiders.html_parser import get_people, get_people_id
 from models.base import database, People, Chat
-
-
-def if_int(item):
-    try:
-        int(item)
-    except ValueError:
-        return False
-    return True
 
 
 def crawl_people_info():

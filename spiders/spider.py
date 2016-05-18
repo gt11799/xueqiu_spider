@@ -46,6 +46,8 @@ class Spider(object):
             'username': USER_NAME,
             'password': self.get_hash(PASSWORD),
         }
+        if if_int(USER_NAME):
+            data['telephone'] = data.pop('username')
         response = self.session.post(url, headers=BASE_HEADER, data=data)
         logger.debug(response.content)
 
@@ -190,7 +192,21 @@ class Spider(object):
         respond = self.session.post(CHAT_URL, headers=CHAT_HEADER, cookies=cookies,
                                     params=params, data=json.dumps(data))
         if respond.status_code == 200:
+            result = respond.json()
+            error = result.get('error')
+            if error:
+                print '发送消息出错了'
+                logger.debug(respond.content)
+                raise ValueError(error.encode('utf8'))
             return True
         logger.debug(respond.status_code)
         logger.debug(respond.content)
         return False
+
+
+def if_int(item):
+    try:
+        int(item)
+    except ValueError:
+        return False
+    return True
