@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 import time
 import json
 import pickle
@@ -10,6 +11,9 @@ from config import *
 from spiders.common import *
 from spiders.html_parser import *
 from logs.log import logger
+
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 
 class Spider(object):
@@ -202,6 +206,30 @@ class Spider(object):
         logger.debug(respond.status_code)
         logger.debug(respond.content)
         return False
+
+    def post(self, msg):
+        msg = msg.encode().decode()
+        token_url = r"https://xueqiu.com/service/csrf"
+        p = {"api": "/statuses/update.json", "_": int(time.time() * 1000)}
+        cookie = self.load_cookies()
+        r = self.session.get(token_url, params=p, cookies=cookie,
+                             headers=BASE_HEADER)
+        try:
+            token = r.json()['token']
+        except (IndexError, TypeError, ValueError):
+            logger.error("MLGB 出错了!")
+            logger.error("\n%s\n", r.text)
+            return
+        post_url = r"https://xueqiu.com/statuses/update.json"
+        data = {"status": "<p>%s</p>" % msg, "session_token": token}
+        r = self.session.post(post_url, data=data, cookies=cookie,
+                              headers=BASE_HEADER)
+        if r.status_code == 200:
+            if r.text.find(msg) > -1:
+                logger.debug("完事儿了.")
+                return
+        logger.error("MLGB 又出错了!")
+        logger.error("\n%s\n", r.text)
 
 
 def if_int(item):

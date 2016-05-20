@@ -31,6 +31,13 @@ def crawl_people_info():
     People.remove_duplicate()
 
 
+def post(msg):
+    spider = Spider()
+    spider.visit_index()
+    spider.login()
+    spider.post(msg)
+
+
 def send_chat_msg():
     spider = Spider()
     spider.login()
@@ -73,7 +80,7 @@ def clear_log():
     logger.info('日志清除完毕')
 
 
-def main(func):
+def main(func, *args, **kwargs):
     funcs = {
         'crawl_people_info': crawl_people_info,
         'send_chat_msg': send_chat_msg,
@@ -81,15 +88,23 @@ def main(func):
         'remove_login': remove_login,
         'remove_all_people': remove_all_people,
         'clear_log': clear_log,
+        'post': post,
     }
     keys = funcs.keys()
     if func not in keys:
         raise ValueError("参数必须是一下几种: %s" % ', '.join(keys))
-    funcs[func]()
+    funcs[func](*args, **kwargs)
 
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         raise ValueError("请在main.py后面加上要执行的参数")
     func = sys.argv[1]
-    main(func)
+    kw = {}
+    if func == "post":
+        try:
+            msg = sys.argv[2]
+            kw = {"msg": msg}
+        except IndexError:
+            raise ValueError("MLGB 发消息不写正文你要搞毛啊")
+    main(func, **kw)
