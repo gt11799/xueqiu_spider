@@ -18,10 +18,11 @@ sys.setdefaultencoding('utf8')
 
 class Spider(object):
 
-    def __init__(self):
+    def __init__(self, user_name=None, password=None):
         self.session = requests.Session()
         self.uid = None
-        self.user_name = None
+        self.user_name = user_name
+        self.password = password
 
     def get_hash(self, string):
         m = hashlib.md5()
@@ -47,10 +48,10 @@ class Spider(object):
         data = {
             'areacode': 86,
             'remember_me': 'on',
-            'username': USER_NAME,
-            'password': self.get_hash(PASSWORD),
+            'username': self.user_name,
+            'password': self.get_hash(self.password),
         }
-        if if_int(USER_NAME):
+        if if_int(self.user_name):
             data['telephone'] = data.pop('username')
         response = self.session.post(url, headers=BASE_HEADER, data=data)
         logger.debug(response.content)
@@ -63,14 +64,16 @@ class Spider(object):
         raise ValueError('登录失败')
 
     def save_cookies(self):
+        result = self.load_cookies()
         with open('spiders/.session', 'wb') as f:
             cookies = requests.utils.dict_from_cookiejar(self.session.cookies)
             data = {
                 'cookies': cookies,
                 'uid': self.uid,
-                'user_name': USER_NAME,
+                'user_name': self.user_name,
             }
-            pickle.dump(data, f)
+            result[self.user_name] = data
+            pickle.dump(result, f)
 
     @classmethod
     def clear_cookies(cls):
@@ -83,13 +86,12 @@ class Spider(object):
                 data = pickle.load(f)
             except EOFError:
                 return {}
-            self.user_name = data['user_name']
-            if self.user_name != USER_NAME:
-                logger.warning("账户变更，重新登录")
-                self.uid = None
+            result = data.get(self.user_name)
+            if not result:
+                logger.info("账户未登录")
                 return {}
-            self.uid = data['uid']
-            cookies = data['cookies']
+            self.uid = result['uid']
+            cookies = result['cookies']
             return cookies
 
     def check_login(self, load_cookie=True):
@@ -186,7 +188,7 @@ class Spider(object):
         if not sequenceId:
             return False
         data = {
-            'plain': CHAT_MESSAGE,
+            'plain': msg,
             'to_group': False,
             'toId': uid,
             'sequenceId': sequenceId + 1
@@ -207,12 +209,11 @@ class Spider(object):
         logger.debug(respond.content)
         return False
 
-    def post(self, msg):
-        msg = msg.encode().decode()
-        token_url = r"https://xueqiu.com/service/csrf"
+    def post(self, msg, audience=[]):
         p = {"api": "/statuses/update.json", "_": int(time.time() * 1000)}
         cookie = self.load_cookies()
-        r = self.session.get(token_url, params=p, cookies=cookie,
+        url = urljoin(BASE_URL, TOKEN_URL)
+        r = self.session.get(url, params=p, cookies=cookie,
                              headers=BASE_HEADER)
         try:
             token = r.json()['token']
@@ -220,16 +221,23 @@ class Spider(object):
             logger.error("MLGB 出错了!")
             logger.error("\n%s\n", r.text)
             return
-        post_url = r"https://xueqiu.com/statuses/update.json"
+        audience = ' @'.join(audience)
+        audience = ' @' + audience.strip()
+        msg = '%s %s' % (msg, audience)
+        logger.info('发送的内容是: %s' % msg)
+        msg = msg.encode().decode()
         data = {"status": "<p>%s</p>" % msg, "session_token": token}
-        r = self.session.post(post_url, data=data, cookies=cookie,
+        url = urljoin(BASE_URL, POST_URL)
+        r = self.session.post(url, data=data, cookies=cookie,
                               headers=BASE_HEADER)
         if r.status_code == 200:
-            if r.text.find(msg) > -1:
+            data = r.json()
+            if not data.get('error_code') > -1:
                 logger.debug("完事儿了.")
                 return
         logger.error("MLGB 又出错了!")
         logger.error("\n%s\n", r.text)
+        raise ValueError('发广播出错了')
 
 
 def if_int(item):

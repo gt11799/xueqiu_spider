@@ -7,7 +7,7 @@ from logs.log import logger
 from config import *
 from spiders.spider import Spider, if_int
 from spiders.html_parser import get_people, get_people_id
-from models.base import database, People, Chat
+from models.base import database, People, Chat, Post
 
 
 def crawl_people_info():
@@ -31,22 +31,29 @@ def crawl_people_info():
     People.remove_duplicate()
 
 
-def post(msg):
-    spider = Spider()
+def _post(user_name, password, msg):
+    spider = Spider(user_name=user_name, password=password)
     spider.visit_index()
     spider.login()
-    spider.post(msg)
+    post_obj = Post.get()
+    logger.info(u'开始发送广播信息，从id为%s的开始' % post_obj.post_id)
+    people = People.select().where(People.id > post_obj.post_id).limit(7)
+    people = [_ for _ in people]
+    audience = [_.user_name for _ in people]
+    spider.post(msg, audience)
+    post_obj.post_id = people[-1].id
+    post_obj.save()
 
 
-def send_chat_msg():
-    spider = Spider()
+def _send_chat_msg(user_name, password, msg):
+    spider = Spider(user_name=user_name, password=password)
     spider.login()
     chat_obj = Chat.get()
-    logger.info(u'从id为%s的开始' % chat_obj.chatting_id)
+    logger.info(u'开始发送聊天信息，从id为%s的开始' % chat_obj.chatting_id)
     people = People.select().where(People.id > chat_obj.chatting_id)
     send_count = 0
     for person in people:
-        result = spider.chat(person.uid, CHAT_MESSAGE)
+        result = spider.chat(person.uid, msg)
         if not result:
             logger.error(u'发送给’%s‘失败' % person.user_name)
             time.sleep(PERCHAT_INTEVAL)
@@ -56,6 +63,26 @@ def send_chat_msg():
         chat_obj.chatting_id = person.id
         chat_obj.save()
         time.sleep(PERCHAT_INTEVAL)
+
+
+def post():
+    for msg in POST_MESSAGE:
+        for account in ACCOUNTS:
+            logger.info('使用账户: %s' % account[0])
+            _post(account[0], account[1], msg)
+            time.sleep(PERPOST_INTEVAL)
+    logger.info('全部广播发送完毕')
+
+
+def send_chat_msg():
+    for msg in CHAT_MESSAGE:
+        for account in ACCOUNTS:
+            logger.info('使用账户: %s' % account[0])
+            try:
+                _send_chat_msg(account[0], account[1], msg)
+            except ValueError:
+                continue
+    logger.info('全部聊天发送完毕')
 
 
 def remove_chat_history():
@@ -100,11 +127,4 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         raise ValueError("请在main.py后面加上要执行的参数")
     func = sys.argv[1]
-    kw = {}
-    if func == "post":
-        try:
-            msg = sys.argv[2]
-            kw = {"msg": msg}
-        except IndexError:
-            raise ValueError("MLGB 发消息不写正文你要搞毛啊")
-    main(func, **kw)
+    main(func)

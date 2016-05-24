@@ -31,7 +31,13 @@ class People(Model):
 
 
 class Chat(Model):
+    id = peewee.IntegerField()
     chatting_id = peewee.IntegerField()
+
+
+class Post(Model):
+    id = peewee.IntegerField()
+    post_id = peewee.IntegerField()
 
 
 database.connect()

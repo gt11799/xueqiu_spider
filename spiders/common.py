@@ -6,6 +6,8 @@ PEOPLE_URL = '/people'
 FOLLOWERS_URL = '/friendships/followers.json'
 CHAT_HISTORY_URL = 'https://im3.xueqiu.com/im-comet/v2/sessions/%s-0/messages.json'
 CHAT_URL = 'https://im3.xueqiu.com/im-comet/v2/messages.json'
+POST_URL = "/statuses/update.json"
+TOKEN_URL = "/service/csrf"
 
 
 BASE_HEADER = {
