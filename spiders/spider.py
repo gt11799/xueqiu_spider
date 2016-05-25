@@ -93,7 +93,6 @@ class Spider(object):
                 data = pickle.load(f)
             except EOFError:
                 return {}
-            print data
             result = data.get(self.user_name)
             if not result:
                 logger.info("账户未登录")

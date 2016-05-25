@@ -92,6 +92,13 @@ def remove_chat_history():
     logger.info(u'已经清空了发送历史')
 
 
+def remove_post_history():
+    post_obj = Post.get()
+    post_obj.post_id = 0
+    post_obj.save()
+    logger.info(u'已经清空了发送广播历史')
+
+
 def remove_login():
     Spider.clear_cookies()
     logger.info('登出完毕')
@@ -112,6 +119,7 @@ def main(func, *args, **kwargs):
         'crawl_people_info': crawl_people_info,
         'send_chat_msg': send_chat_msg,
         'remove_chat_history': remove_chat_history,
+        'remove_post_history': remove_post_history,
         'remove_login': remove_login,
         'remove_all_people': remove_all_people,
         'clear_log': clear_log,
