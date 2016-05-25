@@ -40,6 +40,7 @@ config需要配置用户名，密码和要发送的消息
 |------------------|----------------|
 |crawl_people_info | 抓取粉丝        |
 |send_chat_msg     | 发送消息        |
+|post              | 发帖子          |
 |remove_chat_history  | 删除发送历史，执行后，发送消息会从头开始 |
 |remove_login      | 登出           |
 |remove_all_people | 删除数据库中保存的所有粉丝信息 |

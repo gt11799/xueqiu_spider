@@ -50,7 +50,7 @@ def _send_chat_msg(user_name, password, msg):
     spider.login()
     chat_obj = Chat.get()
     logger.info(u'开始发送聊天信息，从id为%s的开始' % chat_obj.chatting_id)
-    people = People.select().where(People.id > chat_obj.chatting_id)
+    people = People.select().where(People.id > chat_obj.chatting_id).limit(2)
     send_count = 0
     for person in people:
         result = spider.chat(person.uid, msg)
