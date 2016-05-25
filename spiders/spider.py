@@ -64,7 +64,7 @@ class Spider(object):
         raise ValueError('登录失败')
 
     def save_cookies(self):
-        result = self.load_cookies()
+        result = self.load_data()
         with open('spiders/.session', 'wb') as f:
             cookies = requests.utils.dict_from_cookiejar(self.session.cookies)
             data = {
@@ -80,12 +80,20 @@ class Spider(object):
         with open('spiders/.session', 'wb') as f:
             pickle.dump({}, f)
 
+    def load_data(self):
+        with open('spiders/.session') as f:
+            try:
+                return pickle.load(f)
+            except EOFError:
+                return {}
+
     def load_cookies(self):
         with open('spiders/.session') as f:
             try:
                 data = pickle.load(f)
             except EOFError:
                 return {}
+            print data
             result = data.get(self.user_name)
             if not result:
                 logger.info("账户未登录")
